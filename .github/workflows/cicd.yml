@@ -39,4 +39,4 @@ jobs:
             提交信息: ${{ github.event.head_commit.message }}
             查看详情: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           to: ${{ github.event.pusher.email }}
-          from: Github (${{ github.repository }}) 
+          from: GitHub (${{ github.repository }}) <${{ secrets.EMAIL_USERNAME }}> 
