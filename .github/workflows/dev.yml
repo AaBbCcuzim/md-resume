@@ -89,12 +89,12 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-            # 登录 Docker Hub (可选，如果是私有仓库则必须)
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            # 使用 sudo 确保权限，并尝试多跑几次登录
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             # 停止并删除旧容器
-            docker stop ${{ github.event.repository.name }} || true
-            docker rm ${{ github.event.repository.name }} || true
+            sudo docker stop ${{ github.event.repository.name }} || true
+            sudo docker rm ${{ github.event.repository.name }} || true
             # 拉取新镜像
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
+            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
             # 运行新容器
-            docker run -d --name ${{ github.event.repository.name }} -p 8080:80 ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
+            sudo docker run -d --name ${{ github.event.repository.name }} -p 8080:80 ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
