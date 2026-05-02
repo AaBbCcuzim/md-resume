@@ -75,11 +75,12 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: 构建并推送 Docker 镜像
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/Dockerfile
           push: true
+          provenance: false
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
 
       - name: 远程 SSH 指令拉取并运行
@@ -89,12 +90,26 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-            # 使用 sudo 确保权限，并尝试多跑几次登录
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            # Docker Hub 登录（重试 3 次）
+            for i in 1 2 3; do
+              echo "Docker login attempt $i..."
+              echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin && break
+              echo "Login failed, retrying in 5s..."
+              sleep 5
+            done
+
             # 停止并删除旧容器
             sudo docker stop ${{ github.event.repository.name }} || true
             sudo docker rm ${{ github.event.repository.name }} || true
-            # 拉取新镜像
-            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
+
+            # 拉取新镜像（重试 3 次）
+            IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest"
+            for i in 1 2 3; do
+              echo "Docker pull attempt $i..."
+              sudo docker pull "$IMAGE" && break
+              echo "Pull failed, retrying in 10s..."
+              sleep 10
+            done
+
             # 运行新容器
-            sudo docker run -d --name ${{ github.event.repository.name }} -p 8080:80 ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}:latest
+            sudo docker run -d --name ${{ github.event.repository.name }} -p 8080:80 "$IMAGE"
