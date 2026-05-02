@@ -1,0 +1,19 @@
+@media print {
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  header,
+  nav,
+  .editor-layout [class*='border-r'] {
+    display: none !important;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 15mm;
+}
